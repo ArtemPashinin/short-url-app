@@ -1,0 +1,60 @@
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: mysql_db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: nest_db
+      MYSQL_USER: nest_user
+      MYSQL_PASSWORD: nest_password
+      DATABASE_HOST: localhost
+      DATABASE_PORT: 3307
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - app-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nest_backend
+    environment:
+      - DATABASE_HOST=db
+      - DATABASE_PORT=3306
+      - DATABASE_NAME=nest_db
+      - DATABASE_USER=nest_user
+      - DATABASE_PASSWORD=nest_password
+      - ADDRES=localhost
+      - PORT=3000
+    depends_on:
+      - db
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/app
+    networks:
+      - app-network
+    command: sh -c "npx sequelize-cli db:migrate && npm run start:prod"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: next_frontend
+    ports:
+      - "3001:3000"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+volumes:
+  mysql_data:
+
+networks:
+  app-network:
+    driver: bridge
